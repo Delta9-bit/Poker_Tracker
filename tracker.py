@@ -1,4 +1,5 @@
 import json
+from itertools import permutations
 
 def create_deck():
     suits = ['c', 'd', 'h', 's']
@@ -36,7 +37,25 @@ def decompose_cards(which):
         
     return n_which, suits_which 
     
- 
+
+def draw_probability(cards, n_deck):
+    permute = permutations(cards)
+    
+    p = 1
+    total_proba = 0
+    d = len(deck)
+    
+    for item in permute:
+        for i in range(0, len(item)):
+            d = d - 1
+            remain_in_deck = n_deck.count(item[i])
+            p = p * (remain_in_deck / d)
+            
+        total_proba = total_proba + p
+        
+    return total_proba
+            
+    
 def outs_probabilities(table, hand, combinations, remaining_turns, deck):
     outs = {'high_card' : [],
             'pair' : [],
@@ -75,34 +94,29 @@ def outs_probabilities(table, hand, combinations, remaining_turns, deck):
             # for all combinations
             for item in combinations[out]:
                 # check if we have required cards
-                required_nb_cards = []
+                required_values = []
                 n_available_copy = n_available.copy()
 
                 for i in item:
                     if i not in n_available_copy:
-                        required_nb_cards.append(i)
+                        required_values.append(i)
                     else:
                         n_available_copy.remove(i)
                 
-                required_nb_cards = len(required_nb_cards)
+                required_nb_cards = len(required_values)
                 
                 # if we do -> probability of combination is 100%
                 if required_nb_cards == 0:
                     outs[out] = '100 %'
                     break
                 # if not then...  
-                # impossible darws
+                # impossible darws (missing more cards than cards left to draw)
                 if required_nb_cards > remaining_turns:
                     outs[out].append(0)
                 # possible draws
                 else:
-                    # which cards are missing ?
-                    print(out, item, required_nb_cards)  
-                    required_values = list(set(item) - set(available_cards))
                     # probability of drawing missing cards given state of game
-                    for value in required_values:
-                        nb_in_deck = n_deck.count(value)
-                        p = nb_in_deck / len(deck)
+                    p = draw_probability(required_values, n_deck)
                     
                     outs[out].append(p)
             # total probabilities
@@ -118,24 +132,14 @@ path = r'/Users/lucasA/Desktop/PokerTracker/Poker_Tracker/Combinations/combinati
 
 with open(path, 'r') as openfile:
     combinations = json.load(openfile)
-
-state = int(input('state : ?'))
-
-if type(state) != int:
-    print('erreur')
-    state = int(input('state : ?'))
-elif state < 1 or state > 5:
-    print('erreur')
-    state = int(input('state : ?'))
-else:
-    pass
-
-remaining_turns = 5 - state
+    
+deck = create_deck()
 
 hand = ['10s', '4c']
 table  = ['4d', '3s', '9s']
 
-deck = create_deck()
+state = len(table)
+remaining_turns = 5 - state
 
 outs = outs_probabilities(table, hand, combinations, remaining_turns, deck)
 
